@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 import json
 
@@ -12,11 +13,20 @@ class Expense:
     description: str = ""
 
 def load_expenses():
+    # If the data file doesn't exist yet or is empty/invalid, return an empty list
     if not DATA_FILE.exists():
         return []
-    with open(DATA_FILE, "r") as f:
-        data = json.load(f)
-        return [Expense(**item) for item in data]
+    try:
+        with open(DATA_FILE, "r") as f:
+            # json.load will raise a JSONDecodeError for empty or malformed files
+            data = json.load(f)
+            if not isinstance(data, list):
+                # unexpected format, ignore it
+                return []
+            return [Expense(**item) for item in data]
+    except json.JSONDecodeError:
+        # file exists but is empty or contains invalid JSON
+        return []
 
 def save_expenses(expenses):
     with open(DATA_FILE, "w") as f:
@@ -25,7 +35,7 @@ def save_expenses(expenses):
 def add_expense():
     amount = float(input("Amount: "))
     category = input("Category: ")
-    date = input("Date (YYYY-MM-DD): ")
+    date = datetime.now().isoformat()
     description = input("Description (optional): ")
     expense = Expense(amount, category, date, description)
 
